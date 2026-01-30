@@ -4,11 +4,26 @@ import { calculateRiskLevel, getRiskColor, getRiskBgColor, getRiskText, isLockPr
 import { AlertTriangle, X, Bell, BellOff, Volume2 } from 'lucide-react';
 
 export function AlertBanner() {
-  const { marketRate, platformRate, alertDismissed, dismissAlert, resetAlert, consecutiveExpansions } = useRateStore();
+  const { 
+    marketRate, 
+    platformRate, 
+    alertDismissed, 
+    dismissAlert, 
+    resetAlert, 
+    consecutiveExpansions,
+    warningThreshold,
+    dangerThreshold,
+    criticalThreshold
+  } = useRateStore();
 
   const diff = marketRate - platformRate;
   const isLockWindow = isLockPriceWindow();
-  const riskLevel = calculateRiskLevel(diff, isLockWindow, consecutiveExpansions);
+  const thresholds = {
+    warning: warningThreshold,
+    danger: dangerThreshold,
+    critical: criticalThreshold
+  };
+  const riskLevel = calculateRiskLevel(marketRate, platformRate, isLockWindow, consecutiveExpansions, thresholds);
 
   // Reset dismissed state when risk level changes
   useEffect(() => {
@@ -49,13 +64,25 @@ export function AlertBanner() {
 }
 
 export function AlertModal() {
-  const { marketRate, platformRate, consecutiveExpansions } = useRateStore();
+  const { 
+    marketRate, 
+    platformRate, 
+    consecutiveExpansions,
+    warningThreshold,
+    dangerThreshold,
+    criticalThreshold
+  } = useRateStore();
   const [isOpen, setIsOpen] = useState(false);
   const [lastAlertTime, setLastAlertTime] = useState(0);
 
   const diff = marketRate - platformRate;
   const isLockWindow = isLockPriceWindow();
-  const riskLevel = calculateRiskLevel(diff, isLockWindow, consecutiveExpansions);
+  const thresholds = {
+    warning: warningThreshold,
+    danger: dangerThreshold,
+    critical: criticalThreshold
+  };
+  const riskLevel = calculateRiskLevel(marketRate, platformRate, isLockWindow, consecutiveExpansions, thresholds);
 
   // Show modal for critical alerts (with cooldown)
   useEffect(() => {

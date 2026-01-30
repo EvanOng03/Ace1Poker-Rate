@@ -21,6 +21,9 @@ export function useRateFetcher() {
     incrementExpansions,
     resetExpansions,
     isInitialized,
+    warningThreshold,
+    dangerThreshold,
+    criticalThreshold,
   } = useRateStore();
 
   const [previousDiff, setPreviousDiff] = useState<number | null>(null);
@@ -46,8 +49,14 @@ export function useRateFetcher() {
         }
       }
       setPreviousDiff(diff);
+      
+      const thresholds = {
+        warning: warningThreshold,
+        danger: dangerThreshold,
+        critical: criticalThreshold
+      };
 
-      const riskLevel = calculateRiskLevel(diff, isLockWindow, consecutiveExpansions);
+      const riskLevel = calculateRiskLevel(rate, platformRate, isLockWindow, consecutiveExpansions, thresholds);
 
       // Add to history
       addRateRecord({

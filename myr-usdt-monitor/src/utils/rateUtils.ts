@@ -32,24 +32,26 @@ export function isLockPriceWindow(date: Date = new Date()): boolean {
   return false;
 }
 
-// Calculate risk level based on diff and time window
+// Calculate risk level based on distance to platform rate
 export function calculateRiskLevel(
-  diff: number,
-  isLockWindow: boolean = false,
-  consecutiveExpansions: number = 0
+  marketRate: number,
+  platformRate: number,
+  isLockWindow: boolean,
+  consecutiveExpansions: number,
+  thresholds: { warning: number; danger: number; critical: number }
 ): 'safe' | 'warning' | 'danger' | 'critical' {
-  const absDiff = Math.abs(diff);
+  // Gap = how much "room" is left between market rate and our platform rate
+  const gap = platformRate - marketRate;
 
-  // Critical: diff >= 0.10 OR (lock window + consecutive expansions >= 2)
-  if (absDiff >= 0.08) return 'critical';
-  if (isLockWindow && consecutiveExpansions >= 2 && absDiff >= 0.04) return 'critical';
+  // 1. Critical
+  if (gap <= thresholds.critical) return 'critical';
+  if (isLockWindow && consecutiveExpansions >= 2 && gap <= thresholds.warning) return 'critical';
 
-  // Danger: diff >= 0.08
-  if (absDiff >= 0.06) return 'danger';
+  // 2. Danger
+  if (gap <= thresholds.danger) return 'danger';
 
-  // Warning: diff >= 0.05 OR (lock window + diff >= 0.04)
-  if (absDiff >= 0.05) return 'warning';
-  if (isLockWindow && absDiff >= 0.04) return 'warning';
+  // 3. Warning
+  if (gap <= thresholds.warning) return 'warning';
 
   return 'safe';
 }
@@ -98,7 +100,7 @@ export function calculateAdjustedDiff(marketRate: number, platformRate: number, 
 
 // Get refresh interval based on time window
 export function getRefreshInterval(isLockWindow: boolean): number {
-  return 10000; // Fixed to 10 seconds
+  return isLockWindow ? 30000 : 60000; // 30s vs 60s
 }
 
 // Export data to CSV

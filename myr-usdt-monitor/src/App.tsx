@@ -12,7 +12,15 @@ function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'chart' | 'table'>('chart');
   const { isLoading, error, refetch } = useRateFetcher();
-  const { marketRate, platformRate, isInitialized, syncWithSupabase } = useRateStore();
+  const { 
+    marketRate, 
+    platformRate, 
+    isInitialized, 
+    syncWithSupabase,
+    warningThreshold,
+    dangerThreshold,
+    criticalThreshold
+  } = useRateStore();
   const { isLockWindow, formattedTime } = useCurrentTime();
 
   // Initial Supabase sync
@@ -134,11 +142,11 @@ function App() {
         <div className="bg-gray-800/30 rounded-xl p-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div>
-              <h3 className="text-gray-400 font-medium mb-2">点差规则</h3>
+              <h3 className="text-gray-400 font-medium mb-2">告警规则 (距离平台价)</h3>
               <ul className="text-gray-500 space-y-1">
-                <li className="flex items-center gap-2"><span className="text-yellow-400">⚠️</span> ≥0.05: 注意</li>
-                <li className="flex items-center gap-2"><span className="text-orange-400">●</span> ≥0.08: 危险</li>
-                <li className="flex items-center gap-2"><span className="text-red-400">●</span> ≥0.10: 紧急</li>
+                <li className="flex items-center gap-2"><span className="text-yellow-400">⚠️</span> ≤{warningThreshold.toFixed(3)}: 注意</li>
+                <li className="flex items-center gap-2"><span className="text-orange-400">●</span> ≤{dangerThreshold.toFixed(3)}: 危险</li>
+                <li className="flex items-center gap-2"><span className="text-red-400">●</span> ≤{criticalThreshold.toFixed(3)}: 紧急</li>
               </ul>
             </div>
             <div>
