@@ -20,6 +20,7 @@ export function useRateFetcher() {
     consecutiveExpansions,
     incrementExpansions,
     resetExpansions,
+    isInitialized,
   } = useRateStore();
 
   const [previousDiff, setPreviousDiff] = useState<number | null>(null);
@@ -66,6 +67,8 @@ export function useRateFetcher() {
 
   // Auto refresh
   useEffect(() => {
+    if (!isInitialized) return;
+
     fetchRate(); // Initial fetch
 
     const setupInterval = () => {
@@ -89,7 +92,7 @@ export function useRateFetcher() {
       clearInterval(intervalId);
       clearInterval(checkInterval);
     };
-  }, [fetchRate]);
+  }, [fetchRate, isInitialized]);
 
   return {
     isLoading,
