@@ -12,8 +12,13 @@ function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'chart' | 'table'>('chart');
   const { isLoading, error, refetch } = useRateFetcher();
-  const { marketRate, platformRate } = useRateStore();
+  const { marketRate, platformRate, syncWithSupabase } = useRateStore();
   const { isLockWindow, formattedTime } = useCurrentTime();
+
+  // Initial Supabase sync
+  useEffect(() => {
+    syncWithSupabase();
+  }, [syncWithSupabase]);
 
   // Page title update
   useEffect(() => {

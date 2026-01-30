@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { supabase } from '../lib/supabase';
 
 export interface RateRecord {
   timestamp: number;
@@ -50,6 +51,7 @@ interface RateStore {
   incrementExpansions: () => void;
   resetExpansions: () => void;
   clearHistory: () => void;
+  syncWithSupabase: () => Promise<void>;
 }
 
 export const useRateStore = create<RateStore>()(
@@ -70,24 +72,58 @@ export const useRateStore = create<RateStore>()(
 
       setCostBuffer: (buffer) => set({ costBuffer: buffer }),
 
-      addRateRecord: (record) => {
+      addRateRecord: async (record) => {
         const history = get().rateHistory;
         // Keep last 7 days (roughly 2000+ records at 5min intervals)
         const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
         const filtered = history.filter(r => r.timestamp > sevenDaysAgo);
         set({ rateHistory: [...filtered, record] });
+
+        // Push to Supabase
+        try {
+          await supabase.from('rate_history').insert([{
+            timestamp: record.timestamp,
+            market_rate: record.marketRate,
+            platform_rate: record.platformRate,
+            diff: record.diff,
+            risk_level: record.riskLevel
+          }]);
+        } catch (error) {
+          console.error('Failed to push to Supabase:', error);
+        }
       },
 
-      updateDailyStats: (stats) => {
+      updateDailyStats: async (stats) => {
         const dailyStats = get().dailyStats;
         const existingIndex = dailyStats.findIndex(s => s.date === stats.date);
+        
+        let newDailyStats;
         if (existingIndex >= 0) {
           dailyStats[existingIndex] = stats;
-          set({ dailyStats: [...dailyStats] });
+          newDailyStats = [...dailyStats];
         } else {
           // Keep last 7 days
           const recent = dailyStats.slice(-6);
-          set({ dailyStats: [...recent, stats] });
+          newDailyStats = [...recent, stats];
+        }
+        set({ dailyStats: newDailyStats });
+
+        // Push to Supabase
+        try {
+          await supabase.from('daily_stats').upsert({
+            date: stats.date,
+            max_diff: stats.maxDiff,
+            min_diff: stats.minDiff,
+            avg_diff: stats.avgDiff,
+            max_market_rate: stats.maxMarketRate,
+            min_market_rate: stats.minMarketRate,
+            avg_market_rate: stats.avgMarketRate,
+            platform_rate: stats.platformRate,
+            risk_level: stats.riskLevel,
+            lock_time_rate: stats.lockTimeRate
+          }, { onConflict: 'date' });
+        } catch (error) {
+          console.error('Failed to push daily stats to Supabase:', error);
         }
       },
 
@@ -100,6 +136,53 @@ export const useRateStore = create<RateStore>()(
       resetExpansions: () => set({ consecutiveExpansions: 0 }),
 
       clearHistory: () => set({ rateHistory: [], dailyStats: [] }),
+
+      syncWithSupabase: async () => {
+        try {
+          // Fetch last 7 days history
+          const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+          const { data: historyData } = await supabase
+            .from('rate_history')
+            .select('*')
+            .gt('timestamp', sevenDaysAgo)
+            .order('timestamp', { ascending: true });
+
+          if (historyData) {
+            const history: RateRecord[] = historyData.map(r => ({
+              timestamp: Number(r.timestamp),
+              marketRate: r.market_rate,
+              platformRate: r.platform_rate,
+              diff: r.diff,
+              riskLevel: r.risk_level
+            }));
+            set({ rateHistory: history });
+          }
+
+          // Fetch daily stats
+          const { data: statsData } = await supabase
+            .from('daily_stats')
+            .select('*')
+            .order('date', { ascending: true });
+
+          if (statsData) {
+            const stats: DailyStats[] = statsData.map(s => ({
+              date: s.date,
+              maxDiff: s.max_diff,
+              minDiff: s.min_diff,
+              avgDiff: s.avg_diff,
+              maxMarketRate: s.max_market_rate,
+              minMarketRate: s.min_market_rate,
+              avgMarketRate: s.avg_market_rate,
+              platformRate: s.platform_rate,
+              riskLevel: s.risk_level,
+              lockTimeRate: s.lock_time_rate
+            }));
+            set({ dailyStats: stats });
+          }
+        } catch (error) {
+          console.error('Supabase sync failed:', error);
+        }
+      },
     }),
     {
       name: 'myr-usdt-rate-store',
