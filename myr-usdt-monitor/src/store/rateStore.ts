@@ -68,9 +68,29 @@ export const useRateStore = create<RateStore>()(
 
       setMarketRate: (rate) => set({ marketRate: rate, lastUpdated: Date.now() }),
 
-      setPlatformRate: (rate) => set({ platformRate: rate }),
+      setPlatformRate: async (rate) => {
+        set({ platformRate: rate });
+        try {
+          await supabase.from('app_settings').upsert({ 
+            key: 'platform_rate', 
+            value: rate.toString() 
+          }, { onConflict: 'key' });
+        } catch (error) {
+          console.error('Failed to sync platform rate:', error);
+        }
+      },
 
-      setCostBuffer: (buffer) => set({ costBuffer: buffer }),
+      setCostBuffer: async (buffer) => {
+        set({ costBuffer: buffer });
+        try {
+          await supabase.from('app_settings').upsert({ 
+            key: 'cost_buffer', 
+            value: buffer.toString() 
+          }, { onConflict: 'key' });
+        } catch (error) {
+          console.error('Failed to sync cost buffer:', error);
+        }
+      },
 
       addRateRecord: async (record) => {
         const history = get().rateHistory;
@@ -139,6 +159,16 @@ export const useRateStore = create<RateStore>()(
 
       syncWithSupabase: async () => {
         try {
+          // Fetch settings
+          const { data: settingsData } = await supabase.from('app_settings').select('*');
+          if (settingsData) {
+            const platformRateSetting = settingsData.find(s => s.key === 'platform_rate');
+            const costBufferSetting = settingsData.find(s => s.key === 'cost_buffer');
+            
+            if (platformRateSetting) set({ platformRate: parseFloat(platformRateSetting.value) });
+            if (costBufferSetting) set({ costBuffer: parseFloat(costBufferSetting.value) });
+          }
+
           // Fetch last 7 days history
           const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
           const { data: historyData } = await supabase
