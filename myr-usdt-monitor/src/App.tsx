@@ -12,7 +12,7 @@ function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'chart' | 'table'>('chart');
   const { isLoading, error, refetch } = useRateFetcher();
-  const { marketRate, platformRate, syncWithSupabase } = useRateStore();
+  const { marketRate, platformRate, isInitialized, syncWithSupabase } = useRateStore();
   const { isLockWindow, formattedTime } = useCurrentTime();
 
   // Initial Supabase sync
@@ -29,6 +29,15 @@ function App() {
       document.title = 'MYR/USDT 汇率监控';
     }
   }, [marketRate, platformRate]);
+
+  if (!isInitialized) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center text-white">
+        <Activity className="w-12 h-12 text-blue-500 animate-spin mb-4" />
+        <p className="text-gray-400">正在同步云端配置...</p>
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-screen bg-gray-900 ${isLockWindow ? 'border-t-4 border-yellow-500' : ''}`}>
