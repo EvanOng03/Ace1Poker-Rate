@@ -39,6 +39,7 @@ interface RateStore {
   // Alert state
   alertDismissed: boolean;
   consecutiveExpansions: number;
+  isInitialized: boolean;
 
   // Actions
   setMarketRate: (rate: number) => void;
@@ -65,6 +66,7 @@ export const useRateStore = create<RateStore>()(
       dailyStats: [],
       alertDismissed: false,
       consecutiveExpansions: 0,
+      isInitialized: false,
 
       setMarketRate: (rate) => set({ marketRate: rate, lastUpdated: Date.now() }),
 
@@ -168,6 +170,8 @@ export const useRateStore = create<RateStore>()(
             if (platformRateSetting) set({ platformRate: parseFloat(platformRateSetting.value) });
             if (costBufferSetting) set({ costBuffer: parseFloat(costBufferSetting.value) });
           }
+          
+          set({ isInitialized: true });
 
           // Fetch last 7 days history
           const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
