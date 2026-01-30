@@ -8,41 +8,21 @@ interface SettingsPanelProps {
 }
 
 export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
-  const { 
-    platformRate, 
-    costBuffer, 
-    warningThreshold,
-    dangerThreshold,
-    criticalThreshold,
-    usdtPremium,
-    setPlatformRate, 
-    setCostBuffer,
-    setThresholds,
-    setUsdtPremium
-  } = useRateStore();
+  const { platformRate, costBuffer, setPlatformRate, setCostBuffer } = useRateStore();
 
   const [tempPlatformRate, setTempPlatformRate] = useState(platformRate.toString());
   const [tempCostBuffer, setTempCostBuffer] = useState(costBuffer.toString());
-  const [tempWarning, setTempWarning] = useState(warningThreshold.toString());
-  const [tempDanger, setTempDanger] = useState(dangerThreshold.toString());
-  const [tempCritical, setTempCritical] = useState(criticalThreshold.toString());
-  const [tempPremium, setTempPremium] = useState(usdtPremium.toString());
 
   const handleSave = () => {
     const newRate = parseFloat(tempPlatformRate);
     const newBuffer = parseFloat(tempCostBuffer);
-    const newWarning = parseFloat(tempWarning);
-    const newDanger = parseFloat(tempDanger);
-    const newCritical = parseFloat(tempCritical);
-    const newPremium = parseFloat(tempPremium);
 
-    if (!isNaN(newRate) && newRate > 0) setPlatformRate(newRate);
-    if (!isNaN(newBuffer) && newBuffer >= 0) setCostBuffer(newBuffer);
-    if (!isNaN(newWarning) && !isNaN(newDanger) && !isNaN(newCritical)) {
-      setThresholds(newWarning, newDanger, newCritical);
+    if (!isNaN(newRate) && newRate > 0) {
+      setPlatformRate(newRate);
     }
-    if (!isNaN(newPremium)) setUsdtPremium(newPremium);
-    
+    if (!isNaN(newBuffer) && newBuffer >= 0) {
+      setCostBuffer(newBuffer);
+    }
     onClose();
   };
 
@@ -98,57 +78,6 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
             />
             <p className="text-gray-500 text-xs mt-1">
               建议范围: 0.02 ~ 0.03 MYR
-            </p>
-          </div>
-
-          {/* Alert Thresholds */}
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="block text-gray-400 text-xs mb-1">注意线</label>
-              <input
-                type="number"
-                step="0.001"
-                value={tempWarning}
-                onChange={(e) => setTempWarning(e.target.value)}
-                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-gray-400 text-xs mb-1">危险线</label>
-              <input
-                type="number"
-                step="0.001"
-                value={tempDanger}
-                onChange={(e) => setTempDanger(e.target.value)}
-                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-gray-400 text-xs mb-1">紧急线</label>
-              <input
-                type="number"
-                step="0.001"
-                value={tempCritical}
-                onChange={(e) => setTempCritical(e.target.value)}
-                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm"
-              />
-            </div>
-          </div>
-
-          {/* USDT Premium */}
-          <div>
-            <label className="block text-gray-400 text-sm mb-2">
-              USDT 溢价 (相对于 USD)
-            </label>
-            <input
-              type="number"
-              step="0.0001"
-              value={tempPremium}
-              onChange={(e) => setTempPremium(e.target.value)}
-              className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500"
-            />
-            <p className="text-gray-500 text-xs mt-1">
-              典型值: 0.001 ~ 0.003 (0.1% ~ 0.3%)
             </p>
           </div>
 

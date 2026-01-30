@@ -31,10 +31,6 @@ interface RateStore {
 
   // Settings
   costBuffer: number;
-  warningThreshold: number;
-  dangerThreshold: number;
-  criticalThreshold: number;
-  usdtPremium: number;
 
   // History
   rateHistory: RateRecord[];
@@ -49,8 +45,6 @@ interface RateStore {
   setMarketRate: (rate: number) => void;
   setPlatformRate: (rate: number) => void;
   setCostBuffer: (buffer: number) => void;
-  setThresholds: (warning: number, danger: number, critical: number) => void;
-  setUsdtPremium: (premium: number) => void;
   addRateRecord: (record: RateRecord) => void;
   updateDailyStats: (stats: DailyStats) => void;
   dismissAlert: () => void;
@@ -68,37 +62,13 @@ export const useRateStore = create<RateStore>()(
       platformRate: 4.35,
       lastUpdated: Date.now(),
       costBuffer: 0.025,
-      warningThreshold: 0.05,
-      dangerThreshold: 0.08,
-      criticalThreshold: 0.10,
-      usdtPremium: 0.002, // 0.2%
       rateHistory: [],
       dailyStats: [],
       alertDismissed: false,
       consecutiveExpansions: 0,
       isInitialized: false,
 
-      setMarketRate: (rate) => {
-        const currentMarketRate = get().marketRate;
-        const premium = get().usdtPremium;
-        
-        // 1. Apply USDT Premium
-        let targetRate = rate * (1 + premium);
-
-        if (currentMarketRate > 0) {
-          // 2. Volatility Protection (max 0.3% change per cycle)
-          const maxChange = currentMarketRate * 0.003;
-          const diff = targetRate - currentMarketRate;
-          if (Math.abs(diff) > maxChange) {
-            targetRate = currentMarketRate + (diff > 0 ? maxChange : -maxChange);
-          }
-
-          // 3. Time Smoothing (XE/Wise Soul: 90% old + 10% new)
-          targetRate = (currentMarketRate * 0.9) + (targetRate * 0.1);
-        }
-
-        set({ marketRate: targetRate, lastUpdated: Date.now() });
-      },
+      setMarketRate: (rate) => set({ marketRate: rate, lastUpdated: Date.now() }),
 
       setPlatformRate: async (rate) => {
         set({ platformRate: rate });
@@ -121,28 +91,6 @@ export const useRateStore = create<RateStore>()(
           }, { onConflict: 'key' });
         } catch (error) {
           console.error('Failed to sync cost buffer:', error);
-        }
-      },
-
-      setThresholds: async (warning, danger, critical) => {
-        set({ warningThreshold: warning, dangerThreshold: danger, criticalThreshold: critical });
-        try {
-          await supabase.from('app_settings').upsert([
-            { key: 'warning_threshold', value: warning.toString() },
-            { key: 'danger_threshold', value: danger.toString() },
-            { key: 'critical_threshold', value: critical.toString() }
-          ], { onConflict: 'key' });
-        } catch (error) {
-          console.error('Failed to sync thresholds:', error);
-        }
-      },
-
-      setUsdtPremium: async (premium) => {
-        set({ usdtPremium: premium });
-        try {
-          await supabase.from('app_settings').upsert({ key: 'usdt_premium', value: premium.toString() }, { onConflict: 'key' });
-        } catch (error) {
-          console.error('Failed to sync premium:', error);
         }
       },
 
@@ -218,17 +166,9 @@ export const useRateStore = create<RateStore>()(
           if (settingsData) {
             const platformRateSetting = settingsData.find(s => s.key === 'platform_rate');
             const costBufferSetting = settingsData.find(s => s.key === 'cost_buffer');
-            const warningSetting = settingsData.find(s => s.key === 'warning_threshold');
-            const dangerSetting = settingsData.find(s => s.key === 'danger_threshold');
-            const criticalSetting = settingsData.find(s => s.key === 'critical_threshold');
-            const premiumSetting = settingsData.find(s => s.key === 'usdt_premium');
             
             if (platformRateSetting) set({ platformRate: parseFloat(platformRateSetting.value) });
             if (costBufferSetting) set({ costBuffer: parseFloat(costBufferSetting.value) });
-            if (warningSetting) set({ warningThreshold: parseFloat(warningSetting.value) });
-            if (dangerSetting) set({ dangerThreshold: parseFloat(dangerSetting.value) });
-            if (criticalSetting) set({ criticalThreshold: parseFloat(criticalSetting.value) });
-            if (premiumSetting) set({ usdtPremium: parseFloat(premiumSetting.value) });
           }
           
           set({ isInitialized: true });

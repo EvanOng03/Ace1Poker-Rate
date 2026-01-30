@@ -13,7 +13,7 @@ interface DataPoint {
 }
 
 export function RateChart() {
-  const { rateHistory, platformRate, warningThreshold } = useRateStore();
+  const { rateHistory, platformRate } = useRateStore();
   const [hoveredPoint, setHoveredPoint] = useState<DataPoint | null>(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
 
@@ -27,7 +27,7 @@ export function RateChart() {
         marketRate: record.marketRate,
         platformRate: record.platformRate,
         diff: record.diff,
-        isHighRisk: (record.platformRate - record.marketRate) <= warningThreshold,
+        isHighRisk: Math.abs(record.diff) >= 0.05,
       }));
   }, [rateHistory]);
 

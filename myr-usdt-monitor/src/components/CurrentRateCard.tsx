@@ -16,26 +16,12 @@ interface CurrentRateCardProps {
 }
 
 export function CurrentRateCard({ isLoading, onRefresh }: CurrentRateCardProps) {
-  const { 
-    marketRate, 
-    platformRate, 
-    costBuffer, 
-    consecutiveExpansions, 
-    warningThreshold,
-    dangerThreshold,
-    criticalThreshold,
-    lastUpdated
-  } = useRateStore();
+  const { marketRate, platformRate, costBuffer, consecutiveExpansions, lastUpdated } = useRateStore();
   const { formattedTime, isLockWindow } = useCurrentTime();
 
   const diff = marketRate - platformRate;
   const adjustedDiff = calculateAdjustedDiff(marketRate, platformRate, costBuffer);
-  const thresholds = {
-    warning: warningThreshold,
-    danger: dangerThreshold,
-    critical: criticalThreshold
-  };
-  const riskLevel = calculateRiskLevel(marketRate, platformRate, isLockWindow, consecutiveExpansions, thresholds);
+  const riskLevel = calculateRiskLevel(diff, isLockWindow, consecutiveExpansions);
 
   const riskColorClass = getRiskColor(riskLevel);
   const riskBgClass = getRiskBgColor(riskLevel);
@@ -119,7 +105,7 @@ export function CurrentRateCard({ isLoading, onRefresh }: CurrentRateCardProps) 
       {/* Last Updated */}
       <div className="mt-4 text-center text-gray-500 text-xs">
         上次更新: {new Date(lastUpdated).toLocaleTimeString('zh-CN')}
-        {isLockWindow && <span className="ml-2 text-yellow-400">• 高频刷新模式 (30秒)</span>}
+        {isLockWindow && <span className="ml-2 text-yellow-400">• 高频刷新模式 (1分钟)</span>}
       </div>
     </div>
   );

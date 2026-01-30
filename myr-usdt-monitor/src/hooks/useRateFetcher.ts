@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { fetchBankGradeRate } from '../services/rateApi';
+import { fetchUSDTMYRRate } from '../services/rateApi';
 import { useRateStore } from '../store/rateStore';
 import {
   formatMalaysiaTime,
@@ -21,9 +21,6 @@ export function useRateFetcher() {
     incrementExpansions,
     resetExpansions,
     isInitialized,
-    warningThreshold,
-    dangerThreshold,
-    criticalThreshold,
   } = useRateStore();
 
   const [previousDiff, setPreviousDiff] = useState<number | null>(null);
@@ -33,7 +30,7 @@ export function useRateFetcher() {
     setError(null);
 
     try {
-      const rate = await fetchBankGradeRate();
+      const rate = await fetchUSDTMYRRate();
       setMarketRate(rate);
       setLastFetchTime(new Date());
 
@@ -49,14 +46,8 @@ export function useRateFetcher() {
         }
       }
       setPreviousDiff(diff);
-      
-      const thresholds = {
-        warning: warningThreshold,
-        danger: dangerThreshold,
-        critical: criticalThreshold
-      };
 
-      const riskLevel = calculateRiskLevel(rate, platformRate, isLockWindow, consecutiveExpansions, thresholds);
+      const riskLevel = calculateRiskLevel(diff, isLockWindow, consecutiveExpansions);
 
       // Add to history
       addRateRecord({

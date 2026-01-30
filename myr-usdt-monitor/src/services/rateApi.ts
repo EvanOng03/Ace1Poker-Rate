@@ -1,80 +1,85 @@
-// Rate API service - Bank-grade Implementation
-// Sources: ECB (Frankfurter), ExchangeRate-API (Aggregator A), OpenER (Aggregator B)
+// Rate API service with multiple fallback sources
+
+// USDT is typically very close to 1 USD, so we use USD/MYR as base
+// Then USDT/MYR ≈ USD/MYR * 1.00 (with small variation)
 
 interface RateSource {
   name: string;
-  weight: number; // Central Bank weight is higher
   fetch: () => Promise<number>;
 }
 
+// Source 1: ExchangeRate API (free, CORS-enabled)
+async function fetchFromExchangeRateAPI(): Promise<number> {
+  const response = await fetch(
+    'https://api.exchangerate-api.com/v4/latest/USD'
+  );
+  if (!response.ok) throw new Error('ExchangeRate API failed');
+  const data = await response.json();
+  // USD/MYR rate, USDT ≈ USD with slight premium
+  return data.rates.MYR * 1.002; // 0.2% typical USDT premium
+}
+
+// Source 2: Open Exchange Rates (backup)
+async function fetchFromOpenExchangeRates(): Promise<number> {
+  const response = await fetch(
+    'https://open.er-api.com/v6/latest/USD'
+  );
+  if (!response.ok) throw new Error('Open ER API failed');
+  const data = await response.json();
+  return data.rates.MYR * 1.002;
+}
+
+// Source 3: Frankfurter API (ECB data)
+async function fetchFromFrankfurter(): Promise<number> {
+  const response = await fetch(
+    'https://api.frankfurter.app/latest?from=USD&to=MYR'
+  );
+  if (!response.ok) throw new Error('Frankfurter API failed');
+  const data = await response.json();
+  return data.rates.MYR * 1.002;
+}
+
+// Source 4: Currency API (another backup)
+async function fetchFromCurrencyAPI(): Promise<number> {
+  const response = await fetch(
+    'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json'
+  );
+  if (!response.ok) throw new Error('Currency API failed');
+  const data = await response.json();
+  return data.usd.myr * 1.002;
+}
+
 const rateSources: RateSource[] = [
-  { 
-    name: 'ECB/Frankfurter', 
-    weight: 0.5, // 50% weight
-    fetch: async () => {
-      const resp = await fetch('https://api.frankfurter.app/latest?from=USD&to=MYR');
-      if (!resp.ok) throw new Error('ECB failed');
-      const data = await resp.json();
-      return data.rates.MYR;
-    }
-  },
-  { 
-    name: 'Aggregator A', 
-    weight: 0.25, 
-    fetch: async () => {
-      const resp = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
-      if (!resp.ok) throw new Error('Aggregator A failed');
-      const data = await resp.json();
-      return data.rates.MYR;
-    }
-  },
-  { 
-    name: 'Aggregator B', 
-    weight: 0.25, 
-    fetch: async () => {
-      const resp = await fetch('https://open.er-api.com/v6/latest/USD');
-      if (!resp.ok) throw new Error('Aggregator B failed');
-      const data = await resp.json();
-      return data.rates.MYR;
-    }
-  }
+  { name: 'ExchangeRate API', fetch: fetchFromExchangeRateAPI },
+  { name: 'Open ER API', fetch: fetchFromOpenExchangeRates },
+  { name: 'Currency API', fetch: fetchFromCurrencyAPI },
+  { name: 'Frankfurter', fetch: fetchFromFrankfurter },
 ];
 
-export async function fetchBankGradeRate(): Promise<number> {
-  const results = await Promise.allSettled(rateSources.map(s => s.fetch()));
-  
-  const validRates: { rate: number; weight: number }[] = [];
-  results.forEach((res, index) => {
-    if (res.status === 'fulfilled') {
-      validRates.push({ rate: res.value, weight: rateSources[index].weight });
+// Try each source until one succeeds
+export async function fetchUSDTMYRRate(): Promise<number> {
+  let lastError: Error | null = null;
+
+  for (const source of rateSources) {
+    try {
+      console.log(`Trying ${source.name}...`);
+      const rate = await source.fetch();
+      console.log(`Success from ${source.name}: ${rate}`);
+      return rate;
+    } catch (error) {
+      console.warn(`${source.name} failed:`, error);
+      lastError = error as Error;
     }
-  });
+  }
 
-  if (validRates.length === 0) throw new Error('All sources failed');
-
-  // 1. Calculate temp average for outlier filtering
-  const tempAvg = validRates.reduce((acc, curr) => acc + curr.rate, 0) / validRates.length;
-
-  // 2. Filter outliers (±1% deviation)
-  const filteredRates = validRates.filter(r => Math.abs(r.rate - tempAvg) / tempAvg <= 0.01);
-
-  if (filteredRates.length === 0) return tempAvg;
-
-  // 3. Weighted Calculation
-  let totalWeight = 0;
-  let weightedSum = 0;
-  filteredRates.forEach(r => {
-    weightedSum += r.rate * r.weight;
-    totalWeight += r.weight;
-  });
-
-  return weightedSum / totalWeight;
+  // If all sources fail, throw the last error
+  throw lastError || new Error('All rate sources failed');
 }
 
 // Fetch historical rates (simulated based on current rate with realistic variation)
 export async function fetchHistoricalRate(days: number = 7): Promise<{ timestamp: number; rate: number }[]> {
   try {
-    const currentRate = await fetchBankGradeRate();
+    const currentRate = await fetchUSDTMYRRate();
     const history: { timestamp: number; rate: number }[] = [];
     const now = Date.now();
     const dayMs = 24 * 60 * 60 * 1000;
