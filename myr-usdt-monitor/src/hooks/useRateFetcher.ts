@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { fetchUSDTMYRRate } from '../services/rateApi';
+import { fetchBankGradeRate } from '../services/rateApi';
 import { useRateStore } from '../store/rateStore';
 import {
   formatMalaysiaTime,
@@ -33,7 +33,7 @@ export function useRateFetcher() {
     setError(null);
 
     try {
-      const rate = await fetchUSDTMYRRate();
+      const rate = await fetchBankGradeRate();
       setMarketRate(rate);
       setLastFetchTime(new Date());
 
