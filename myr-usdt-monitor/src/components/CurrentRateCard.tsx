@@ -19,7 +19,7 @@ export function CurrentRateCard({ isLoading, onRefresh }: CurrentRateCardProps) 
   const { marketRate, platformRate, costBuffer, consecutiveExpansions, lastUpdated } = useRateStore();
   const { formattedTime, isLockWindow } = useCurrentTime();
 
-  const diff = marketRate - platformRate;
+  const diff = platformRate - marketRate;
   const adjustedDiff = calculateAdjustedDiff(marketRate, platformRate, costBuffer);
   const riskLevel = calculateRiskLevel(diff, isLockWindow, consecutiveExpansions);
 
@@ -82,7 +82,7 @@ export function CurrentRateCard({ isLoading, onRefresh }: CurrentRateCardProps) 
               {marketRate > 0 ? (diff >= 0 ? '+' : '') + diff.toFixed(4) : '--'}
             </p>
           </div>
-          <p className="text-gray-500 text-xs mt-1">市场 - 平台</p>
+          <p className="text-gray-500 text-xs mt-1">平台 - 市场</p>
         </div>
       </div>
 

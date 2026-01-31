@@ -38,18 +38,22 @@ export function calculateRiskLevel(
   isLockWindow: boolean = false,
   consecutiveExpansions: number = 0
 ): 'safe' | 'warning' | 'danger' | 'critical' {
-  const absDiff = Math.abs(diff);
+  // Diff is (Platform - Market). Risk increases as diff becomes more negative.
+  // We use the absolute value for thresholds if they represent the "spread" size.
+  // However, the user wants "Platform - Market", so let's look at the gap.
+  const spread = diff; // Platform - Market
+  const absSpread = Math.abs(spread);
 
-  // Critical: diff >= 0.10 OR (lock window + consecutive expansions >= 2)
-  if (absDiff >= 0.08) return 'critical';
-  if (isLockWindow && consecutiveExpansions >= 2 && absDiff >= 0.04) return 'critical';
+  // Critical: spread <= -0.08 OR (lock window + consecutive expansions >= 2)
+  if (absSpread >= 0.08) return 'critical';
+  if (isLockWindow && consecutiveExpansions >= 2 && absSpread >= 0.04) return 'critical';
 
-  // Danger: diff >= 0.08
-  if (absDiff >= 0.06) return 'danger';
+  // Danger: spread <= -0.06
+  if (absSpread >= 0.06) return 'danger';
 
-  // Warning: diff >= 0.05 OR (lock window + diff >= 0.04)
-  if (absDiff >= 0.05) return 'warning';
-  if (isLockWindow && absDiff >= 0.04) return 'warning';
+  // Warning: spread <= -0.05 OR (lock window + diff <= -0.04)
+  if (absSpread >= 0.05) return 'warning';
+  if (isLockWindow && absSpread >= 0.04) return 'warning';
 
   return 'safe';
 }
@@ -93,7 +97,7 @@ export function getRiskText(level: 'safe' | 'warning' | 'danger' | 'critical'): 
 
 // Calculate adjusted diff with cost buffer
 export function calculateAdjustedDiff(marketRate: number, platformRate: number, costBuffer: number): number {
-  return marketRate - platformRate - costBuffer;
+  return platformRate - marketRate - costBuffer;
 }
 
 // Get refresh interval based on time window

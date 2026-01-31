@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useRateStore } from '../store/rateStore';
 import { format } from 'date-fns';
-import { BarChart2, ZoomIn, ZoomOut } from 'lucide-react';
+import { BarChart2 } from 'lucide-react';
+import { formatMalaysiaTime, calculateRiskLevel } from '../utils/rateUtils';
 
 interface DataPoint {
   time: string;
@@ -18,17 +19,17 @@ export function RateChart() {
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
 
   const chartData = useMemo(() => {
-    const step = Math.max(1, Math.floor(rateHistory.length / 100));
-    return rateHistory
-      .filter((_, i) => i % step === 0)
-      .map(record => ({
-        time: format(new Date(record.timestamp), 'MM-dd HH:mm'),
-        timestamp: record.timestamp,
-        marketRate: record.marketRate,
-        platformRate: record.platformRate,
-        diff: record.diff,
-        isHighRisk: Math.abs(record.diff) >= 0.05,
-      }));
+    // Show all change events from the last 7 days (or whatever is in rateHistory)
+    // but maybe cap it to last 200 points for performance
+    const history = rateHistory.slice(-200);
+    return history.map(record => ({
+      time: formatMalaysiaTime(new Date(record.timestamp), 'MM-dd HH:mm'),
+      timestamp: record.timestamp,
+      marketRate: record.marketRate,
+      platformRate: record.platformRate,
+      diff: record.diff,
+      isHighRisk: calculateRiskLevel(record.diff) !== 'safe',
+    }));
   }, [rateHistory]);
 
   const { minRate, maxRate, yScale, xScale } = useMemo(() => {

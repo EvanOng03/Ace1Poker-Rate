@@ -15,6 +15,8 @@ export function useRateFetcher() {
 
   const {
     platformRate,
+    marketRate: currentMarketRate,
+    rateHistory,
     setMarketRate,
     addRateRecord,
     consecutiveExpansions,
@@ -34,7 +36,7 @@ export function useRateFetcher() {
       setMarketRate(rate);
       setLastFetchTime(new Date());
 
-      const diff = rate - platformRate;
+      const diff = platformRate - rate;
       const isLockWindow = isLockPriceWindow();
 
       // Track consecutive expansions
@@ -49,21 +51,24 @@ export function useRateFetcher() {
 
       const riskLevel = calculateRiskLevel(diff, isLockWindow, consecutiveExpansions);
 
-      // Add to history
-      addRateRecord({
-        timestamp: Date.now(),
-        marketRate: rate,
-        platformRate,
-        diff,
-        riskLevel,
-      });
+      // Add to history only when rate has changed
+      const lastRecord = rateHistory[rateHistory.length - 1];
+      if (!lastRecord || lastRecord.marketRate !== rate || lastRecord.platformRate !== platformRate) {
+        addRateRecord({
+          timestamp: Date.now(),
+          marketRate: rate,
+          platformRate,
+          diff,
+          riskLevel,
+        });
+      }
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch rate');
     } finally {
       setIsLoading(false);
     }
-  }, [platformRate, previousDiff, consecutiveExpansions, setMarketRate, addRateRecord, incrementExpansions, resetExpansions]);
+  }, [platformRate, previousDiff, consecutiveExpansions, setMarketRate, addRateRecord, incrementExpansions, resetExpansions, rateHistory]);
 
   // Auto refresh
   useEffect(() => {

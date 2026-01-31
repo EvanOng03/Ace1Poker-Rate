@@ -23,7 +23,7 @@ function App() {
   // Page title update
   useEffect(() => {
     if (marketRate > 0) {
-      const diff = marketRate - platformRate;
+      const diff = platformRate - marketRate;
       document.title = `MYR ${marketRate.toFixed(4)} | 点差 ${(diff >= 0 ? '+' : '')}${diff.toFixed(4)}`;
     } else {
       document.title = 'MYR/USDT 汇率监控';
@@ -136,9 +136,9 @@ function App() {
             <div>
               <h3 className="text-gray-400 font-medium mb-2">点差规则</h3>
               <ul className="text-gray-500 space-y-1">
-                <li className="flex items-center gap-2"><span className="text-yellow-400">⚠️</span> ≥0.05: 注意</li>
-                <li className="flex items-center gap-2"><span className="text-orange-400">●</span> ≥0.08: 危险</li>
-                <li className="flex items-center gap-2"><span className="text-red-400">●</span> ≥0.10: 紧急</li>
+                <li className="flex items-center gap-2"><span className="text-yellow-400">⚠️</span> |点差| ≥0.05: 注意</li>
+                <li className="flex items-center gap-2"><span className="text-orange-400">●</span> |点差| ≥0.06: 危险</li>
+                <li className="flex items-center gap-2"><span className="text-red-400">●</span> |点差| ≥0.08: 紧急</li>
               </ul>
             </div>
             <div>

@@ -6,7 +6,7 @@ import { AlertTriangle, X, Bell, BellOff, Volume2 } from 'lucide-react';
 export function AlertBanner() {
   const { marketRate, platformRate, alertDismissed, dismissAlert, resetAlert, consecutiveExpansions } = useRateStore();
 
-  const diff = marketRate - platformRate;
+  const diff = platformRate - marketRate;
   const isLockWindow = isLockPriceWindow();
   const riskLevel = calculateRiskLevel(diff, isLockWindow, consecutiveExpansions);
 
@@ -53,7 +53,7 @@ export function AlertModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [lastAlertTime, setLastAlertTime] = useState(0);
 
-  const diff = marketRate - platformRate;
+  const diff = platformRate - marketRate;
   const isLockWindow = isLockPriceWindow();
   const riskLevel = calculateRiskLevel(diff, isLockWindow, consecutiveExpansions);
 
