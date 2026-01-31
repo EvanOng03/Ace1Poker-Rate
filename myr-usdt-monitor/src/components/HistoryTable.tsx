@@ -8,7 +8,8 @@ export function HistoryTable() {
   const { rateHistory } = useRateStore();
 
   const displayedHistory = useMemo(() => {
-    return [...rateHistory].reverse().slice(0, 50);
+    // Sort by timestamp descending and take top 50
+    return [...rateHistory].sort((a, b) => b.timestamp - a.timestamp).slice(0, 50);
   }, [rateHistory]);
 
   const dailyRanges = useMemo(() => {

@@ -171,8 +171,6 @@ export const useRateStore = create<RateStore>()(
             if (costBufferSetting) set({ costBuffer: parseFloat(costBufferSetting.value) });
           }
           
-          set({ isInitialized: true });
-
           // Fetch last 7 days history
           const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
           const { data: historyData } = await supabase
@@ -213,6 +211,9 @@ export const useRateStore = create<RateStore>()(
             }));
             set({ dailyStats: stats });
           }
+
+          // ONLY set isInitialized to true after everything is loaded
+          set({ isInitialized: true });
         } catch (error) {
           console.error('Supabase sync failed:', error);
         }

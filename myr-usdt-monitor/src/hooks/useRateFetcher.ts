@@ -15,8 +15,6 @@ export function useRateFetcher() {
 
   const {
     platformRate,
-    marketRate: currentMarketRate,
-    rateHistory,
     setMarketRate,
     addRateRecord,
     consecutiveExpansions,
@@ -51,9 +49,17 @@ export function useRateFetcher() {
 
       const riskLevel = calculateRiskLevel(diff, isLockWindow, consecutiveExpansions);
 
-      // Add to history only when rate has changed
-      const lastRecord = rateHistory[rateHistory.length - 1];
-      if (!lastRecord || lastRecord.marketRate !== rate || lastRecord.platformRate !== platformRate) {
+      // Add to history only when rate has changed (4 decimal places check)
+      const currentHistory = useRateStore.getState().rateHistory;
+      const lastRecord = currentHistory[currentHistory.length - 1];
+      
+      const rate4 = Number(rate.toFixed(4));
+      const platformRate4 = Number(platformRate.toFixed(4));
+      
+      const isRateChanged = !lastRecord || Number(lastRecord.marketRate.toFixed(4)) !== rate4;
+      const isPlatformChanged = !lastRecord || Number(lastRecord.platformRate.toFixed(4)) !== platformRate4;
+
+      if (isRateChanged || isPlatformChanged) {
         addRateRecord({
           timestamp: Date.now(),
           marketRate: rate,
@@ -68,7 +74,7 @@ export function useRateFetcher() {
     } finally {
       setIsLoading(false);
     }
-  }, [platformRate, previousDiff, consecutiveExpansions, setMarketRate, addRateRecord, incrementExpansions, resetExpansions, rateHistory]);
+  }, [platformRate, previousDiff, consecutiveExpansions, setMarketRate, addRateRecord, incrementExpansions, resetExpansions]);
 
   // Auto refresh
   useEffect(() => {
