@@ -1,0 +1,17 @@
+name: Supabase Keep Alive (For Vercel App)
+
+on:
+  schedule:
+    # 建议每 3 天跑一次，确保万无一失
+    - cron: '0 0 */3 * *'
+  workflow_dispatch: 
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase API
+        run: |
+          curl -i -X GET "${{ secrets.SUPABASE_URL }}/rest/v1/" \
+          -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+          -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}"
